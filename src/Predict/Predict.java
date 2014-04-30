@@ -14,6 +14,10 @@ import java.util.TreeMap;
 
 public class Predict {
 
+	private static final int BELOW_THRESHOLD_GROUP = 0;
+	private static final int ABOVE_THRESHOLD_GROUP = 1;
+	private static final int POSITIVE_GROUP = 1;
+	private static final int NEGATIVE_GROUP = 0;
 	private static final long GROUP_IDENTIFIER = 0L;
 
 	public static void main(String[] args) throws IOException {
@@ -96,21 +100,23 @@ public class Predict {
     	int[][] results = new int[2][2];
     	for (Map<Long, Double> vector : featureVectors) {
     		double score = multiplyVectors(vector, model);
-    		results[score > 0 ? 1 : 0][vector.get(GROUP_IDENTIFIER) > 0 ? 1 : 0] += 1;
+    		results[score > 0 ? ABOVE_THRESHOLD_GROUP : BELOW_THRESHOLD_GROUP][vector.get(GROUP_IDENTIFIER) > 0 ? POSITIVE_GROUP : NEGATIVE_GROUP] += 1;
     	}
     	return results;
     }
     
     public static double getAccuracy(int[][] prediction) {
-    	return (prediction[0][0] + prediction[1][1]) / (prediction[0][0] + prediction[1][1] + prediction[0][1] + prediction[1][0]);
+    	return (prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP]) / 
+    			(prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP] + 
+    					prediction[BELOW_THRESHOLD_GROUP][POSITIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][NEGATIVE_GROUP]);
     }
     
     public static double getSpecificity(int[][] prediction) {
-    	return prediction[0][0] / (prediction[0][0] + prediction[1][0]);
+    	return prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] / (prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][NEGATIVE_GROUP]);
     }
     
     public static double getSensitivity(int[][] prediction) {
-    	return prediction[1][1] / (prediction[1][1] + prediction[0][1]);
+    	return prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP] / (prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP] + prediction[BELOW_THRESHOLD_GROUP][POSITIVE_GROUP]);
     }
     
     public static double getAccuracy(String testFile, String modelFile) throws IOException {
