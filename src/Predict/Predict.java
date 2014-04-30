@@ -35,15 +35,13 @@ public class Predict {
 		long start = System.currentTimeMillis();
         try {
     		BufferedReader r = new BufferedReader(new FileReader(modelFile));   
-			String solverType = r.readLine();
-			String classNumber = r.readLine();
-			String labels = r.readLine();
-			String featureAmount = r.readLine();
-			String bias = r.readLine();
+			r.readLine(); // solverType
+			r.readLine(); // classNumber
+			r.readLine(); // labels
+			r.readLine(); // featureAmount
+			r.readLine(); // bias
 			r.readLine();
 			
-			int featuresAmount = Integer.parseInt(featureAmount.replace("nr_feature", "").trim());
-			++featuresAmount; //The feature program start with index 1 to supprt SVMLight format
 			modelFeaturesWeightsNew = new TreeMap<Long,Double>();
 			String line;
 			while ((line = r.readLine()) != null)
@@ -75,12 +73,7 @@ public class Predict {
         int false_positives = 0;  // negative intances that were classified as negative
 
 
-        int true_positives2 = 0;  // positive intances that were classified as positive
-        int false_negatives2 = 0;  // positive intances that were classified as positive
-        int true_negatives2 = 0;  // negative intances that were classified as negative
-        int false_positives2 = 0;  // negative intances that were classified as negative
-
-		String line;
+        String line;
 		while ((line = r.readLine()) != null)
         {
             ++instanceAmount;
@@ -89,7 +82,6 @@ public class Predict {
             if (hasLabel) label = values[0];
 
             double sum = 0.0;
-            int instanceFeaturesAmount = values.length - 1; // -1 is because the train/test creation function add extra space at the end 
             int i = 0;
             if (hasLabel) i = 1;
             for (; i < values.length; i++)
@@ -109,11 +101,6 @@ public class Predict {
             if (!label.equals("1") && sum > 0.0) ++false_positives;
             if (!label.equals("1") && sum <= 0.0) ++true_negatives;
 
-            if (label == "1" && sum >= 0) ++true_positives2;
-            if (label == "1" && sum < 0) ++false_negatives2;
-            if (label != "1" && sum >= 0) ++false_positives2;
-            if (label != "1" && sum < 0) ++true_negatives2;
-
             sw.append(label + "\t" + sum);
             sw.newLine();
         }
@@ -129,7 +116,7 @@ public class Predict {
             Double Spcecifity = (double)true_negatives / (true_negatives + false_positives);
             Double Accuracy = (double)(true_positives + true_negatives) / (true_positives + false_negatives + true_negatives + false_positives);
             Double Recall = Sensitivity;
-            Double F1 = 2 * Precision * Recall / (Precision + Recall);
+            // Double F1 = 2 * Precision * Recall / (Precision + Recall);
             Double accPer = Accuracy*100;
             System.out.println("Accuracy = "+accPer+"% (" +(true_positives+true_negatives)+"/"+(true_positives+false_negatives+true_negatives + false_positives)+")");
             System.out.println("accuracy="+Accuracy +
