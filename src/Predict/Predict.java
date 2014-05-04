@@ -2,6 +2,7 @@ package Predict;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.Console;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -21,7 +22,7 @@ public class Predict {
 	private static final long GROUP_IDENTIFIER = 0L;
 
 	public static void main(String[] args) throws IOException {
-        if (args.length < 3)
+        if (args.length < 2)
         {
             System.out.println("Usage: Predict.exe test_file model_file result_file");
             return;
@@ -29,18 +30,21 @@ public class Predict {
 
         String testFile = args[0];
         String modelFile = args[1];
-        String resultFile = args[2];
+        //String resultFile = args[2];
 
 //        boolean hasLabel = true;
 //        if (args.length == 4) hasLabel =  Boolean.parseBoolean(args[3]);
 
-        Map<Long, Double> model = loadModel(modelFile);
-        predictAccuracy(testFile, resultFile, model);		
+//        Map<Long, Double> model = loadModel(modelFile);
+//        predictAccuracy(testFile, resultFile, model);
+        System.out.println(getAccuracy(testFile, modelFile));
 	}	
 
     private static Map<Long,Double> loadModel(String modelFile) throws IOException
     {
-        try (BufferedReader r = new BufferedReader(new FileReader(modelFile))) {   
+    	BufferedReader r = null;
+        try {
+        	r = new BufferedReader(new FileReader(modelFile));
 			r.readLine(); // solverType
 			r.readLine(); // classNumber
 			r.readLine(); // labels
@@ -56,8 +60,12 @@ public class Predict {
 				long idx = Long.parseLong(fields[0]);
 				double weight = Double.parseDouble(fields[1]);
 				modelFeatureWeights.put(idx,weight);
-				}
+			}
 			return modelFeatureWeights;
+		} finally {
+			if (r != null) {
+				r.close();
+			}
 		}
     }
     
@@ -77,7 +85,9 @@ public class Predict {
     
     private static List<Map<Long, Double>> readFeatureVectors(String testFile) throws IOException {
     	List<Map<Long, Double>> result = new LinkedList<>();
-    	try (BufferedReader r = new BufferedReader(new FileReader(testFile))) {
+    	BufferedReader r = null;
+    	try {
+    		r = new BufferedReader(new FileReader(testFile));
     		String line;
 			while ((line = r.readLine()) != null) {
     		    Map<Long, Double> vector = new HashMap<>();
@@ -91,6 +101,10 @@ public class Predict {
     		    	vector.put(Long.parseLong(fields[0]), Double.parseDouble(fields[1]));
     		    }
     		    result.add(vector);
+    		}
+    	} finally {
+    		if (r != null) {
+    			r.close();
     		}
     	}
     	return result;
@@ -106,17 +120,19 @@ public class Predict {
     }
     
     public static double getAccuracy(int[][] prediction) {
-    	return (prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP]) / 
+    	System.out.println("" + (prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP]) + "/" + (prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP] + 
+    					prediction[BELOW_THRESHOLD_GROUP][POSITIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][NEGATIVE_GROUP]));
+    	return (0.0 + prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP]) / 
     			(prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP] + 
     					prediction[BELOW_THRESHOLD_GROUP][POSITIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][NEGATIVE_GROUP]);
     }
     
     public static double getSpecificity(int[][] prediction) {
-    	return prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] / (prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][NEGATIVE_GROUP]);
+    	return 1.0 * prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] / (prediction[BELOW_THRESHOLD_GROUP][NEGATIVE_GROUP] + prediction[ABOVE_THRESHOLD_GROUP][NEGATIVE_GROUP]);
     }
     
     public static double getSensitivity(int[][] prediction) {
-    	return prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP] / (prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP] + prediction[BELOW_THRESHOLD_GROUP][POSITIVE_GROUP]);
+    	return 1.0 * prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP] / (prediction[ABOVE_THRESHOLD_GROUP][POSITIVE_GROUP] + prediction[BELOW_THRESHOLD_GROUP][POSITIVE_GROUP]);
     }
     
     public static double getAccuracy(String testFile, String modelFile) throws IOException {
@@ -125,8 +141,11 @@ public class Predict {
 
     private static double predictAccuracy(String testFile, String resultFile, Map<Long, Double> model) throws IOException
     {
-    	try (BufferedReader r = new BufferedReader(new FileReader(testFile));   
-    	BufferedWriter  sw = new BufferedWriter (new FileWriter(resultFile))) {
+    	BufferedReader r = null;
+    	BufferedWriter sw = null;
+    	try {
+    		r = new BufferedReader(new FileReader(testFile));   
+    	    sw = new BufferedWriter (new FileWriter(resultFile));
     		int truePositives  = 0;  // positive instances that were classified as positive
 	        int falseNegatives = 0;  // positive instances that were classified as positive
 	        int trueNegatives  = 0;  // negative instances that were classified as negative
@@ -177,6 +196,13 @@ public class Predict {
 //					           ",Sensitivity="+sensitivity+
 //					           ",Specifity="+specificity);
 			return (truePositives + trueNegatives) / (truePositives + falseNegatives + trueNegatives + falsePositives);
+		} finally {
+			if (r != null) {
+				r.close();
+			}
+			if (sw != null) {
+				sw.close();
+			}
 		}
     	
     }
